@@ -69,12 +69,12 @@ public class Game {
 		return glfwGetKey(window, x) == GLFW_PRESS;
 	}
 	
-	public Vector2DInt getMouseLocation()
+	public Vector2D getMouseLocation()
 	{
 		double[] x = new double[1];
 		double[] y = new double[1];
 		GLFW.glfwGetCursorPos(window,  x,  y);
-		return new Vector2DInt((int)x[0],(int)y[0]);
+		return new Vector2D((int) x[0],(int) y[0]);
 	}
 	
 	// returns window id
@@ -116,9 +116,9 @@ public class Game {
 		
 		//placement of blocked chunks
 		if (keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE)){
-			Vector2DInt mouseCoords = getMouseLocation();
-			if (mouseCoords.x > 0 && mouseCoords.x < width && mouseCoords.y > 0 && mouseCoords.y < height) {
-				Chunk selected = worldGrid[mouseCoords.x / gridSize][mouseCoords.y / gridSize];
+			Vector2D mouseCoords = getMouseLocation();
+			if ((int) mouseCoords.x > 0 && (int) mouseCoords.x < width && (int) mouseCoords.y > 0 && (int) mouseCoords.y < height) {
+				Chunk selected = worldGrid[(int) mouseCoords.x / gridSize][(int) mouseCoords.y / gridSize];
 				if (selected != previousChunk && selected != null) {
 					selected.blocked = !selected.blocked;
 					previousChunk = selected;
@@ -131,7 +131,7 @@ public class Game {
 		}
 		
 		if (keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_B)){
-			Vector2DInt mouseCoords = getMouseLocation();
+			Vector2D mouseCoords = getMouseLocation();
 			for (Seeker s : seekerList) {
 				if (!s.requestedPath)
 					s.setTarget(mouseCoords, pfqueue);

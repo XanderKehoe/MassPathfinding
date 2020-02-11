@@ -3,8 +3,8 @@ import java.util.ArrayList;
 import org.lwjgl.opengl.GL11;
 
 public class Chunk implements Comparable<Chunk> {
-	private Vector2DInt position;
-	Vector2DInt gridPosition;
+	private Vector2D<Integer> position;
+	Vector2D<Integer> gridPosition;
 	int size;
 	Game g; //which game is this chunk attached to
 	
@@ -17,7 +17,7 @@ public class Chunk implements Comparable<Chunk> {
 	int fCost = Integer.MAX_VALUE;
 	
 	public Chunk(Game g, int x, int y, int size) {
-		position = new Vector2DInt(x, y);
+		position = new Vector2D(x, y);
 		this.size = size;
 		this.g = g;
 		
@@ -51,11 +51,11 @@ public class Chunk implements Comparable<Chunk> {
 	public float calculateDistanceCost(Chunk source) {
 		//cost is equal to the total distance from source node
 		final int multiplier = 10;
-		return Vector2DInt.distance(source.position, position) * multiplier;
+		return Vector2D.distance(source.position, position) * multiplier;
 	}
 	
-	public Vector2DInt getWorldCoordsCenter() {
-			return new Vector2DInt(position.x + (size / 2), position.y + (size/2));
+	public Vector2D<Integer> getWorldCoordsCenter() {
+			return new Vector2D<Integer>(position.x + (size / 2), position.y + (size/2));
 	}
 	
 	public ArrayList<Chunk> getNeighbours() {
@@ -120,10 +120,15 @@ public class Chunk implements Comparable<Chunk> {
 	}
 	
 	
-	public static Vector2DInt convertWorldToGridCoords(int x, int y, int gridSize) {
-		Vector2DInt gridCoords = new Vector2DInt(x / gridSize, y / gridSize);
+	public static Vector2D<Integer> convertWorldToGridCoords(int x, int y, int gridSize) {
+		Vector2D<Integer> gridCoords = new Vector2D<Integer>(x / gridSize, y / gridSize);
 		return gridCoords;	
 	}
+	
+	/*public static Vector2DFloat convertWorldToGridCoords(int x, int y, int gridSize) {
+		Vector2DFloat gridCoords = new Vector2DFloat(x / gridSize, y / gridSize);
+		return gridCoords;	
+	}*/
 	
 	public String toString() {
 		return "X: "+position.x+" | Y: "+position.y;

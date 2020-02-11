@@ -3,7 +3,7 @@ import java.util.Queue;
 import org.lwjgl.opengl.GL11;
 
 public class Seeker {
-	Vector2DInt position;
+	Vector2D<Integer> position;
 	int w = 2;
 	int h = 2;
 	
@@ -16,9 +16,9 @@ public class Seeker {
 	
 	public Seeker(Game g, int x, int y) {
 		this.g = g;
-		position = new Vector2DInt(x, y);
+		position = new Vector2D(x, y);
 		
-		Vector2DInt currentChunkGridCoords = Chunk.convertWorldToGridCoords(x, y, Game.gridSize);
+		Vector2D<Integer> currentChunkGridCoords = Chunk.convertWorldToGridCoords(x, y, Game.gridSize);
 		currentChunk = g.worldGrid[currentChunkGridCoords.x][currentChunkGridCoords.y];
 		System.out.println("cC:" + currentChunk);
 	}
@@ -43,28 +43,27 @@ public class Seeker {
 		
 		//if stuck inside a blocked chunk, move.
 		if (currentChunk.blocked) {
+			Vector2D currentChunkCenterPos = currentChunk.getWorldCoordsCenter();
 			position.y--;
 			setCurrentChunk();
 		}
 	}
 	
 	public void moveTowardsWaypoint() {
-		Vector2DInt currentChunkCenterPos = waypoints.peek().getWorldCoordsCenter();
-		Vector2DFloat chunkPositionFloat = new Vector2DFloat(currentChunkCenterPos.x, currentChunkCenterPos.y);
+		Vector2D<Integer> currentChunkCenterPos = waypoints.peek().getWorldCoordsCenter();
+
+		Vector2D<Float> unitVector = Vector2D.getUnitVector(position, currentChunkCenterPos);
 		
-		Vector2DFloat positionFloat = new Vector2DFloat(position.x, position.y);
-		Vector2DFloat unitVector = Vector2DFloat.getUnitVector(positionFloat, chunkPositionFloat);
-		
-		position.x += unitVector.x * speed;
-		position.y += unitVector.y * speed;
+		position.x += (int) (unitVector.x * speed);
+		position.y += (int) (unitVector.y * speed);
 	}
 	
 	public void setCurrentChunk() {
-		Vector2DInt currentChunkGridCoords = Chunk.convertWorldToGridCoords(position.x, position.y, Game.gridSize);
+		Vector2D<Integer> currentChunkGridCoords = Chunk.convertWorldToGridCoords(position.x, position.y, Game.gridSize);
 		currentChunk = g.worldGrid[currentChunkGridCoords.x][currentChunkGridCoords.y];
 	}
 	
-	public void setTarget(Vector2DInt target, PathfinderQueue queue) {
+	public void setTarget(Vector2D target, PathfinderQueue queue) {
 		if (!requestedPath) {
 			requestedPath = true;
 			queue.requestPath(this, target);

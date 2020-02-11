@@ -18,9 +18,9 @@ public class PathfinderQueue {
 	
 	private class Request{
 		Seeker seeker;
-		Vector2DInt target;
+		Vector2D<Integer> target;
 		
-		public Request(Seeker s, Vector2DInt target) {
+		public Request(Seeker s, Vector2D target) {
 			seeker = s;
 			this.target = target;
 		}
@@ -31,7 +31,7 @@ public class PathfinderQueue {
 		this.g = g;
 	}
 	
-	public void requestPath(Seeker s, Vector2DInt target) {
+	public void requestPath(Seeker s, Vector2D<Integer> target) {
 		queue.add(new Request(s, target));
 	}
 	
@@ -50,8 +50,8 @@ public class PathfinderQueue {
 	}
 	
 	public void calculatePath(Request request) {
-		Vector2DInt source = Chunk.convertWorldToGridCoords(request.seeker.position.x, request.seeker.position.y, Game.gridSize);
-		Vector2DInt target = Chunk.convertWorldToGridCoords(request.target.x, request.target.y, Game.gridSize);
+		Vector2D<Integer> source = Chunk.convertWorldToGridCoords(request.seeker.position.x, request.seeker.position.y, Game.gridSize);
+		Vector2D<Integer> target = Chunk.convertWorldToGridCoords(request.target.x, request.target.y, Game.gridSize);
 		
 		if (!g.worldGrid[source.x][source.y].blocked && !g.worldGrid[target.x][target.y].blocked) {
 			MinHeap<Chunk> openSet = new MinHeap<Chunk>();
@@ -69,7 +69,7 @@ public class PathfinderQueue {
 					break;
 				}
 				
-				Vector2DInt currentGridCoords = current.gridPosition;
+				Vector2D<Integer> currentGridCoords = current.gridPosition;
 				if (currentGridCoords.x == target.x && currentGridCoords.y == target.y) {
 					RetracePathAndSet(request.seeker, g.worldGrid[source.x][source.y], g.worldGrid[target.x][target.y]);
 					pathFound = true;
@@ -86,10 +86,10 @@ public class PathfinderQueue {
 						continue;
 					}
 					
-					int newCostToNeighbour = current.gCost + Vector2DInt.distance(current.gridPosition, n.gridPosition);
+					int newCostToNeighbour = current.gCost + Vector2D.distance(current.gridPosition, n.gridPosition);
 					if (newCostToNeighbour < n.gCost || !openSet.contains(n)) { 
 						n.gCost = newCostToNeighbour;
-						n.hCost = Vector2DInt.distance(n.gridPosition, target);
+						n.hCost = Vector2D.distance(n.gridPosition, target);
 						n.parent = current;
 						
 						if(!openSet.contains(n)) {
