@@ -29,13 +29,15 @@ public class Game {
 	public static int height=1000;
 	private static String title="Game";
 	
-	static int gridSize = 50;              
-	public Chunk[][] worldGrid = new Chunk[width/gridSize + 1][height/gridSize + 1];
+	static int worldGridSize = 50;              
+	public Chunk[][] worldGrid = new Chunk[width/worldGridSize][height/worldGridSize];
+	
+	public float collisionMovementMultiplier = 2;
 	
 	long window;
 	
 	ArrayList<Seeker> seekerList = new ArrayList<Seeker>();
-	int n = 10000;
+	int n = 1000;
 	
 	PathfinderQueue pfqueue = new PathfinderQueue(100, this);
 	                
@@ -44,22 +46,23 @@ public class Game {
 	
 	public Game() throws Exception
 	{
-		if (width % gridSize != 0 || height % gridSize != 0) {
+		if (width % worldGridSize != 0 || height % worldGridSize != 0) {
 			throw new Exception("GRID SIZE DIVISION ERROR");
 		}
 		
 		Random rand = new Random();
-		
-		System.out.println("worldGrid Length: "+worldGrid[1].length);
+
 		//initialize worldGrid
 		for (int i = 0; i < worldGrid.length; i++) {
 			for (int j = 0; j < worldGrid[i].length; j++) {
-				worldGrid[i][j] = new Chunk(this, i * gridSize, j * gridSize, gridSize);
+				worldGrid[i][j] = new Chunk(this, i * worldGridSize, j * worldGridSize);
 			}
 		}
 		
+		placeBorderWalls();
+		
 		for (int i = 0; i < n; i++) {
-			seekerList.add(new Seeker(this, rand.nextInt(width), rand.nextInt(height)));
+			seekerList.add(new Seeker(this, worldGridSize + rand.nextInt(width - worldGridSize * 2), worldGridSize + rand.nextInt(height - worldGridSize * 2)));
 		}
 		
 		
@@ -69,12 +72,12 @@ public class Game {
 		return glfwGetKey(window, x) == GLFW_PRESS;
 	}
 	
-	public Vector2D getMouseLocation()
+	public Vector2D<Float> getMouseLocation()
 	{
 		double[] x = new double[1];
 		double[] y = new double[1];
 		GLFW.glfwGetCursorPos(window,  x,  y);
-		return new Vector2D((int) x[0],(int) y[0]);
+		return new Vector2D<Float>((float) x[0],(float) y[0]);
 	}
 	
 	// returns window id
@@ -116,9 +119,9 @@ public class Game {
 		
 		//placement of blocked chunks
 		if (keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE)){
-			Vector2D mouseCoords = getMouseLocation();
-			if ((int) mouseCoords.x > 0 && (int) mouseCoords.x < width && (int) mouseCoords.y > 0 && (int) mouseCoords.y < height) {
-				Chunk selected = worldGrid[(int) mouseCoords.x / gridSize][(int) mouseCoords.y / gridSize];
+			Vector2D<Float> mouseCoords = getMouseLocation();
+			if (mouseCoords.x > 0 && mouseCoords.x < width && mouseCoords.y > 0 && mouseCoords.y < height) {
+				Chunk selected = worldGrid[Math.round(mouseCoords.x) / worldGridSize][Math.round(mouseCoords.y) / worldGridSize];
 				if (selected != previousChunk && selected != null) {
 					selected.blocked = !selected.blocked;
 					previousChunk = selected;
@@ -131,7 +134,7 @@ public class Game {
 		}
 		
 		if (keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_B)){
-			Vector2D mouseCoords = getMouseLocation();
+			Vector2D<Float> mouseCoords = getMouseLocation();
 			for (Seeker s : seekerList) {
 				if (!s.requestedPath)
 					s.setTarget(mouseCoords, pfqueue);
@@ -139,8 +142,8 @@ public class Game {
 		}
 		
 		
-		for (int i = 0; i < worldGrid.length - 1; i++) {
-			for (int j = 0; j < worldGrid[i].length - 1; j++) {
+		for (int i = 0; i < worldGrid.length; i++) {
+			for (int j = 0; j < worldGrid[i].length; j++) {
 				worldGrid[i][j].draw();
 			}
 		}
@@ -150,6 +153,19 @@ public class Game {
 			s.update();
 		}
 		pfqueue.update();
+	}
+	
+	public void placeBorderWalls() {
+		for (int i = 0; i < worldGrid.length; i++) {
+			worldGrid[i][0].blocked = true;
+			worldGrid[i][worldGrid[0].length - 1].blocked = true;
+		}
+		
+		for (int i = 0; i < worldGrid[0].length; i++) {
+			worldGrid[0][i].blocked = true;
+			worldGrid[worldGrid.length - 1][i].blocked = true;
+		}
+		
 	}
 
 

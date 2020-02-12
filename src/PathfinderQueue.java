@@ -18,9 +18,9 @@ public class PathfinderQueue {
 	
 	private class Request{
 		Seeker seeker;
-		Vector2D<Integer> target;
+		Vector2D<Float> target;
 		
-		public Request(Seeker s, Vector2D target) {
+		public Request(Seeker s, Vector2D<Float> target) {
 			seeker = s;
 			this.target = target;
 		}
@@ -31,7 +31,7 @@ public class PathfinderQueue {
 		this.g = g;
 	}
 	
-	public void requestPath(Seeker s, Vector2D<Integer> target) {
+	public void requestPath(Seeker s, Vector2D<Float> target) {
 		queue.add(new Request(s, target));
 	}
 	
@@ -50,8 +50,8 @@ public class PathfinderQueue {
 	}
 	
 	public void calculatePath(Request request) {
-		Vector2D<Integer> source = Chunk.convertWorldToGridCoords(request.seeker.position.x, request.seeker.position.y, Game.gridSize);
-		Vector2D<Integer> target = Chunk.convertWorldToGridCoords(request.target.x, request.target.y, Game.gridSize);
+		Vector2D<Integer> source = Chunk.convertWorldToGridCoords(Math.round(request.seeker.position.x), Math.round(request.seeker.position.y), Game.worldGridSize);
+		Vector2D<Integer> target = Chunk.convertWorldToGridCoords(Math.round(request.target.x), Math.round(request.target.y), Game.worldGridSize);
 		
 		if (!g.worldGrid[source.x][source.y].blocked && !g.worldGrid[target.x][target.y].blocked) {
 			MinHeap<Chunk> openSet = new MinHeap<Chunk>();
@@ -69,27 +69,23 @@ public class PathfinderQueue {
 					break;
 				}
 				
-				Vector2D<Integer> currentGridCoords = current.gridPosition;
+				Vector2D<Integer> currentGridCoords = current.worldGridPosition;
 				if (currentGridCoords.x == target.x && currentGridCoords.y == target.y) {
 					RetracePathAndSet(request.seeker, g.worldGrid[source.x][source.y], g.worldGrid[target.x][target.y]);
 					pathFound = true;
 					break; //target has been found!
 				}
 				
-				//for (Chunk n : current.getNeighbours()){
-				//	System.out.println("\t"+n.toString());
-				//}
 				
-				
-				for (Chunk n : current.getNeighbours()){
+				for (Chunk n : current.getNeighbours(true)){
 					if (n.blocked || closedSet.contains(n)) {
 						continue;
 					}
 					
-					int newCostToNeighbour = current.gCost + Vector2D.distance(current.gridPosition, n.gridPosition);
+					int newCostToNeighbour = current.gCost + Vector2D.distance(current.worldGridPosition, n.worldGridPosition);
 					if (newCostToNeighbour < n.gCost || !openSet.contains(n)) { 
 						n.gCost = newCostToNeighbour;
-						n.hCost = Vector2D.distance(n.gridPosition, target);
+						n.hCost = Vector2D.distance(n.worldGridPosition, target);
 						n.parent = current;
 						
 						if(!openSet.contains(n)) {
@@ -98,6 +94,15 @@ public class PathfinderQueue {
 					}
 				}
 			}
+			
+			if (!pathFound) {
+				System.out.println("no path found");
+				request.seeker.requestedPath = false;
+			}
+		}
+		else {
+			request.seeker.requestedPath = false;
+			System.out.println("reee");
 		}
 	}
 	
