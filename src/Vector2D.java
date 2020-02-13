@@ -9,9 +9,14 @@ public class Vector2D<T> {
 		this.y = y;
 	}
 	
-	static public int distance(Vector2D first, Vector2D second) {
+	static public float distanceFloat(Vector2D<Float> first, Vector2D<Float> second) {
 		//get euclidean distance from two point vectors
-		return (int) Math.sqrt((Math.pow((int) first.x - (int) second.x, 2) + Math.pow((int) first.y - (int) second.y, 2)));
+		return (float) Math.sqrt((Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2)));
+	}
+	
+	static public float distanceInt(Vector2D<Integer> first, Vector2D<Integer> second) {
+		//get euclidean distance from two point vectors
+		return (float) Math.sqrt((Math.pow(first.x - second.x, 2) + Math.pow(first.y - second.y, 2)));
 	}
 	
 	//Use integers as inputs, still returns float

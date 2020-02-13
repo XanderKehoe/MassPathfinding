@@ -1,64 +1,29 @@
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.lwjgl.opengl.GL11;
 
-public class Chunk implements Comparable<Chunk> {
+public class CollisionChunk {
 	private Vector2D<Integer> position;
-	Vector2D<Integer> worldGridPosition;
+	Vector2D<Integer> collisionGridPosition;
 	Game g; //which game is this chunk attached to
+	
+	LinkedBlockingDeque<Seeker> seekersInChunk;
 	
 	boolean blocked = false;
 	
-	//variables for pathfinding
-	Chunk parent = null;
-	int gCost = Integer.MAX_VALUE;
-	int hCost = Integer.MAX_VALUE;
-	int fCost = Integer.MAX_VALUE;
-	
-	public Chunk(Game g, int x, int y) {
+	public CollisionChunk(Game g, int x, int y) {
 		position = new Vector2D<Integer>(x, y);
 		this.g = g;
 		
-		worldGridPosition = Chunk.convertWorldToGridCoords(x, y, Game.worldGridSize);
+		seekersInChunk = new LinkedBlockingDeque<Seeker>();
+		
+		collisionGridPosition = Chunk.convertWorldToGridCoords(x, y, Game.collisionGridSize);
 	}
 	
-	public void draw() {
-		if (blocked) {
-			GL11.glColor3f(0,0,0);
-			
-	        GL11.glBegin(GL11.GL_QUADS);
-	        GL11.glVertex2f(position.x, position.y);
-	        GL11.glVertex2f(position.x+Game.worldGridSize, position.y);
-	        GL11.glVertex2f(position.x+Game.worldGridSize, position.y+Game.worldGridSize);
-	        GL11.glVertex2f(position.x, position.y+Game.worldGridSize);
-	        GL11.glEnd();
-		}
-		 
-	}
-	
-	public Chunk clone() {
-		return new Chunk(this.g, position.x, position.y);
-	}
-	
-	public void setCosts(Chunk source, Chunk target) {
-		this.gCost = (int) calculateDistanceCost(source);
-		this.hCost = (int) calculateDistanceCost(target);
-		this.fCost = this.gCost + this.hCost;
-	}
-	
-	public float calculateDistanceCost(Chunk source) {
-		//cost is equal to the total distance from source node
-		final int multiplier = 10;
-		return Vector2D.distanceInt(source.position, position) * multiplier;
-	}
-	
-	public Vector2D<Float> getWorldCoordsCenter() {
-			return new Vector2D<Float>((float) (position.x + (Game.worldGridSize / 2)), (float) (position.y + (Game.worldGridSize/2)));
-	}
-	
-	public ArrayList<Chunk> getNeighbours() {
-		ArrayList<Chunk> neighbours = new ArrayList<Chunk>();
+	public ArrayList<CollisionChunk> getNeighbours() {
+		ArrayList<CollisionChunk> neighbours = new ArrayList<CollisionChunk>();
 		
 		//have to check these so corners aren't cut
 		boolean top = false;
@@ -66,10 +31,10 @@ public class Chunk implements Comparable<Chunk> {
 		boolean bottom = false;
 		boolean right = false;
 		
-		int checkX = this.worldGridPosition.x;
-		int checkY = this.worldGridPosition.y;
+		int checkX = this.collisionGridPosition.x;
+		int checkY = this.collisionGridPosition.y;
 		
-		Chunk[][] thisGrid = g.worldGrid;
+		CollisionChunk[][] thisGrid = g.collisionGrid;
 		
 		//top
 		if(checkX >= 0 && checkX < thisGrid.length && checkY - 1 >= 0 && checkY - 1 < thisGrid[0].length
@@ -126,23 +91,7 @@ public class Chunk implements Comparable<Chunk> {
 		return gridCoords;	
 	}
 	
-	/*public static Vector2DFloat convertWorldToGridCoords(int x, int y, int gridSize) {
-		Vector2DFloat gridCoords = new Vector2DFloat(x / gridSize, y / gridSize);
-		return gridCoords;	
-	}*/
-	
 	public String toString() {
 		return "X: "+position.x+" | Y: "+position.y;
-	}
-	
-	
-	@Override
-	public int compareTo(Chunk c) {
-		//optimize this by just subtracting fCost?
-		if (this.fCost > c.fCost)
-			return -1;
-		else if (this.fCost < c.fCost)
-			return 1;
-		return 0;
 	}
 }

@@ -9,12 +9,14 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Stack;
 
-public class PathfinderQueue {
+public class PathfinderQueue implements Runnable {
 	Queue<Request> queue = new ArrayDeque<Request>();
 	
 	int requestPerFrame; //how many request to process each time update is called
 	
 	Game g; //which game is this queue attached to
+	
+	boolean alive = true;
 	
 	private class Request{
 		Seeker seeker;
@@ -77,15 +79,15 @@ public class PathfinderQueue {
 				}
 				
 				
-				for (Chunk n : current.getNeighbours(true)){
+				for (Chunk n : current.getNeighbours()){
 					if (n.blocked || closedSet.contains(n)) {
 						continue;
 					}
 					
-					int newCostToNeighbour = current.gCost + Vector2D.distance(current.worldGridPosition, n.worldGridPosition);
+					int newCostToNeighbour = (int) (current.gCost + Vector2D.distanceInt(current.worldGridPosition, n.worldGridPosition));
 					if (newCostToNeighbour < n.gCost || !openSet.contains(n)) { 
 						n.gCost = newCostToNeighbour;
-						n.hCost = Vector2D.distance(n.worldGridPosition, target);
+						n.hCost = (int) Vector2D.distanceInt(n.worldGridPosition, target);
 						n.parent = current;
 						
 						if(!openSet.contains(n)) {
@@ -102,7 +104,6 @@ public class PathfinderQueue {
 		}
 		else {
 			request.seeker.requestedPath = false;
-			System.out.println("reee");
 		}
 	}
 	
@@ -123,6 +124,19 @@ public class PathfinderQueue {
 		
 		s.waypoints = path;
 		s.requestedPath = false;
+	}
+
+	@Override
+	public void run() {
+		while (alive) {
+			try{
+				Thread.sleep(1);
+			}
+			catch (Exception ignore) {
+				//do nothing
+			}
+			update();
+		}
 	}
 	
 	

@@ -7,13 +7,14 @@ public class Seeker {
 	Vector2D<Float> position;
 	int size = 4;
 	
-	int speed = 12;
+	float speed = 1f;
 	
 	RGB color;
 	
 	boolean requestedPath = false; //waiting for path to be received?
 	Queue<Chunk> waypoints = null;
-	Chunk currentChunk;
+	Chunk currentWorldChunk;
+	CollisionChunk currentCollisionChunk;
 	Game g; //which game is this seeker attached to
 	
 	boolean moved = false; //used to prevent double moving from collision
@@ -22,8 +23,11 @@ public class Seeker {
 		this.g = g;
 		position = new Vector2D<Float>(x, y);
 		
-		Vector2D<Integer> currentChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(x), Math.round(y), Game.worldGridSize);
-		currentChunk = g.worldGrid[currentChunkGridCoords.x][currentChunkGridCoords.y];
+		Vector2D<Integer> currentWorldChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(x), Math.round(y), Game.worldGridSize);
+		currentWorldChunk = g.worldGrid[currentWorldChunkGridCoords.x][currentWorldChunkGridCoords.y];
+		
+		Vector2D<Integer> currentCollisionChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(x), Math.round(y), Game.collisionGridSize);
+		currentCollisionChunk = g.collisionGrid[currentCollisionChunkGridCoords.x][currentCollisionChunkGridCoords.y];
 		
 		color = new RGB();
 	}
@@ -41,17 +45,27 @@ public class Seeker {
 				moveTowardsWaypoint();
 				setCurrentChunk();
 				
-				if (currentChunk.equals(waypoints.peek())) {
+				if (currentWorldChunk.equals(waypoints.peek())) {
 					waypoints.remove();
 				}
 			}
 		}
 		
-		//if stuck inside a blocked chunk, move.
-		if (currentChunk.blocked) {
-			Vector2D<Float> currentChunkCenterPos = currentChunk.getWorldCoordsCenter();
-			Vector2D<Float> unitVector = Vector2D.getUnitVectorFloat(currentChunkCenterPos, this.position);
-			move(unitVector.x * g.collisionMovementMultiplier, unitVector.y * g.collisionMovementMultiplier);
+		//if stuck inside a blocked chunk, move to nearby free chunk.
+		if (currentWorldChunk.blocked) {
+			ArrayList<Chunk> neighbours = currentWorldChunk.getNeighbours();
+			float closestDistance = Float.MAX_VALUE;
+			Chunk closestChunk = null;
+			for (Chunk n : neighbours) {
+				if (!n.blocked && Vector2D.distanceFloat(this.position, n.getWorldCoordsCenter()) < closestDistance) {
+					closestChunk = n;
+					closestDistance = Vector2D.distanceFloat(this.position, n.getWorldCoordsCenter());
+				}
+			}
+			
+			if (closestChunk != null) {
+				position = closestChunk.getWorldCoordsCenter();
+			}
 			setCurrentChunk();
 		}
 		
@@ -67,15 +81,24 @@ public class Seeker {
 	}
 	
 	public void setCurrentChunk() {
-		Vector2D<Integer> currentChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(position.x), Math.round(position.y), Game.worldGridSize);
-		Chunk thisChunk = g.worldGrid[currentChunkGridCoords.x][currentChunkGridCoords.y];
-		if (!thisChunk.equals(currentChunk)) {
+		Vector2D<Integer> currentWorldChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(position.x), Math.round(position.y), Game.worldGridSize);
+		Chunk thisWorldChunk = g.worldGrid[currentWorldChunkGridCoords.x][currentWorldChunkGridCoords.y];
+		if (!thisWorldChunk.equals(currentWorldChunk)) {
 			//switch which chunk this seeker is in.
-			currentChunk.seekersInChunk.remove(this);
-			thisChunk.seekersInChunk.add(this);
-			
-			currentChunk = thisChunk;
+			currentWorldChunk = thisWorldChunk;
 		}
+		
+		Vector2D<Integer> currentCollisionChunkGridCoords = Chunk.convertWorldToGridCoords(Math.round(position.x), Math.round(position.y), Game.collisionGridSize);
+		CollisionChunk thisCollisionChunk = g.collisionGrid[currentCollisionChunkGridCoords.x][currentCollisionChunkGridCoords.y];
+		if (!thisCollisionChunk.equals(currentCollisionChunk)) {
+			//switch which chunk this seeker is in.
+			currentCollisionChunk.seekersInChunk.remove(this);
+			thisCollisionChunk.seekersInChunk.add(this);
+			
+			currentCollisionChunk = thisCollisionChunk;
+		}
+		
+		
 	}
 	
 	public void setTarget(Vector2D<Float> target, PathfinderQueue queue) {
@@ -90,12 +113,12 @@ public class Seeker {
 	}
 	
 	public void doCollisionMovement() {
-		ArrayList<Chunk> neighbouringChunks = currentChunk.getNeighbours(false);
-		neighbouringChunks.add(currentChunk); //check current chunk as well
+		ArrayList<CollisionChunk> neighbouringChunks = currentCollisionChunk.getNeighbours();
+		neighbouringChunks.add(currentCollisionChunk); //check current chunk as well
 		
 		ArrayList<Seeker> chunkUpdateNeededList = new ArrayList<Seeker>();
 		
-		for (Chunk c : neighbouringChunks) {
+		for (CollisionChunk c : neighbouringChunks) {
 			for (Seeker s : c.seekersInChunk) {
 				if (this.intersects(s) && s != this && !s.moved) {
 					float multiplier = g.collisionMovementMultiplier;

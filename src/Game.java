@@ -23,6 +23,11 @@ import java.util.List;
 import java.util.Random;
 import java.lang.*;
 
+//TODO
+	//get rid of waypoint removal when entering node it aint supposed to (makes navigating skinny paths disgusting)
+		//just replace with manual check every time before you move?
+	//try BST instead of concurrent linked list thing
+
 
 public class Game {
 	public static int width=1900;
@@ -32,6 +37,9 @@ public class Game {
 	static int worldGridSize = 50;              
 	public Chunk[][] worldGrid = new Chunk[width/worldGridSize][height/worldGridSize];
 	
+	static int collisionGridSize = 10;
+	public CollisionChunk[][] collisionGrid = new CollisionChunk[width/collisionGridSize][height/collisionGridSize];
+	
 	public float collisionMovementMultiplier = 2;
 	
 	long window;
@@ -40,6 +48,11 @@ public class Game {
 	int n = 1000;
 	
 	PathfinderQueue pfqueue = new PathfinderQueue(100, this);
+	Thread pathfindingThread = new Thread(pfqueue);
+	
+	int updateThreadCount = 20;
+	Thread[] updateThreads = new Thread[updateThreadCount];
+	
 	                
 	Chunk previousChunk = null; //keep track of last placed to avoid buggy behavior
 	
@@ -59,11 +72,34 @@ public class Game {
 			}
 		}
 		
+		//initialize collisionGrid
+				for (int i = 0; i < collisionGrid.length; i++) {
+					for (int j = 0; j < collisionGrid[i].length; j++) {
+						collisionGrid[i][j] = new CollisionChunk(this, i * collisionGridSize, j * collisionGridSize);
+					}
+				}
+		
 		placeBorderWalls();
 		
 		for (int i = 0; i < n; i++) {
 			seekerList.add(new Seeker(this, worldGridSize + rand.nextInt(width - worldGridSize * 2), worldGridSize + rand.nextInt(height - worldGridSize * 2)));
 		}
+		
+		pathfindingThread.start();
+		
+		for (int i = 0; i < updateThreadCount; i++) {
+			ArrayList<Seeker> subList = new ArrayList<Seeker>();
+			for (int j = i * (seekerList.size() / updateThreadCount); j < (seekerList.size() / updateThreadCount) + i * (seekerList.size() / updateThreadCount) ; j++) {
+				subList.add(seekerList.get(j));
+			}
+			
+			UpdateClass updateClass = new UpdateClass(subList);
+			Thread updateThread = new Thread(updateClass);
+			updateThreads[i] = updateThread;
+		}
+		
+		for (int i = 0; i < updateThreadCount; i++)
+			updateThreads[i].start();
 		
 		
 	}
@@ -150,9 +186,7 @@ public class Game {
 		
 		for (Seeker s : seekerList) {
 			s.draw();
-			s.update();
 		}
-		pfqueue.update();
 	}
 	
 	public void placeBorderWalls() {
